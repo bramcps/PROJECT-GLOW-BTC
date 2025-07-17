@@ -5,7 +5,7 @@ from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import LSTM, Dense
 from tensorflow.keras.callbacks import EarlyStopping
 from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
-from preprocess import preprocess
+from script.preprocess import preprocess
 
 MODEL_DIR = "models"
 MODEL_PATH = os.path.join(MODEL_DIR, "btc_lstm_model.h5")

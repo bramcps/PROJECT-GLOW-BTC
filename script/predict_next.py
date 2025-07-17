@@ -1,7 +1,7 @@
 import numpy as np
 import tensorflow as tf
 from tensorflow.keras.models import load_model
-from preprocess import preprocess
+from script.preprocess import preprocess
 import os
 
 MODEL_PATH = os.path.join("models", "btc_lstm_model.h5")

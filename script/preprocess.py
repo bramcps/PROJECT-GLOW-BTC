@@ -2,7 +2,7 @@
 
 import numpy as np
 from sklearn.preprocessing import MinMaxScaler
-from get_data import get_mexc_data
+from script.get_data import get_mexc_data
 
 def preprocess(seq_length=180):
     df = get_mexc_data(limit=1000)
