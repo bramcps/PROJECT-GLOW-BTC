@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BitSeer3000 Pro Trading Terminal</title>
+    <!-- Library untuk grafik candlestick profesional -->
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+    <style>
+        /* --- General Styling & Dark Theme --- */
+        :root {
+            --bg-color: #131722;
+            --panel-bg: #1e222d;
+            --border-color: #2a2e39;
+            --text-primary: #d1d4dc;
+            --text-secondary: #8a91a0;
+            --green: #26a69a;
+            --red: #ef5350;
+            --blue: #2962ff;
+            --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            font-family: var(--font-family);
+            margin: 0;
+            padding: 1rem;
+            overflow: hidden;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            height: calc(100vh - 2rem);
+        }
+
+        /* --- Header --- */
+        .main-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border-color);
+            flex-shrink: 0;
+        }
+
+        .main-header h1 {
+            margin: 0;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .metrics {
+            display: flex;
+            gap: 2rem;
+        }
+
+        .metric-item {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+        }
+
+        .metric-item .label {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .metric-item .value {
+            font-size: 1rem;
+            font-weight: 600;
+            transition: color 0.3s ease;
+            animation-duration: 0.3s;
+            animation-timing-function: ease-out;
+        }
+
+        /* --- Main Content --- */
+        .main-content {
+            display: flex;
+            gap: 1rem;
+            flex-grow: 1;
+            margin-top: 1rem;
+            min-height: 0;
+        }
+
+        /* --- Kolom Kiri: Panel Kontrol --- */
+        .control-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            background-color: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 1rem;
+            width: 320px; /* Sedikit lebih lebar untuk panel baru */
+            flex-shrink: 0;
+        }
+
+        .panel-section {
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 1rem;
+            min-height: 0; /* Important for flex children */
+            display: flex;
+            flex-direction: column;
+        }
+        .panel-section:last-child {
+            border-bottom: none;
+        }
+
+        .panel-section h3 {
+            margin: 0 0 1rem 0;
+            font-size: 1rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            flex-shrink: 0;
+        }
+
+        .control-item {
+            margin-bottom: 0.75rem;
+        }
+
+        .control-item label {
+            display: block;
+            font-size: 0.9rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .control-item input {
+            width: 100%;
+            background-color: var(--bg-color);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 0.5rem;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        .status-box {
+            padding: 1rem;
+            text-align: center;
+            border-radius: 4px;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+            transition: all 0.5s ease;
+        }
+        .status-inactive {
+            background-color: #ef535030;
+            color: var(--red);
+            border: 1px solid var(--red);
+            animation: glow-red 2.5s infinite;
+        }
+        .status-active {
+            background-color: #26a69a30;
+            color: var(--green);
+            border: 1px solid var(--green);
+            animation: glow-green 2s infinite;
+        }
+
+        .pnl-info {
+            text-align: center;
+            font-size: 0.9rem;
+        }
+        
+        /* --- Order Book & Market Trades Styling --- */
+        .data-table-container {
+            overflow-y: auto;
+            flex-grow: 1;
+        }
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.8rem;
+        }
+        .data-table th, .data-table td {
+            padding: 0.25rem;
+            text-align: right;
+        }
+        .data-table th {
+            color: var(--text-secondary);
+            font-weight: normal;
+        }
+        .data-table .price-buy { color: var(--green); }
+        .data-table .price-sell { color: var(--red); }
+        
+        /* --- Kolom Kanan: Grafik --- */
+        .chart-section {
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1;
+            background-color: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 1rem;
+        }
+
+        #candlestick-chart {
+            flex-grow: 1;
+        }
+
+        /* --- PERUBAHAN BARU: Panel Trading --- */
+        .trade-panel {
+            display: flex;
+            gap: 0.5rem;
+        }
+        .trade-button {
+            flex-grow: 1;
+            padding: 0.75rem;
+            border: none;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 1rem;
+            color: white;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .trade-button:hover {
+            opacity: 0.9;
+        }
+        .trade-button:active {
+            transform: scale(0.98);
+        }
+        .trade-button:disabled {
+            background-color: var(--border-color);
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+        .buy-button { background-color: var(--green); }
+        .sell-button { background-color: var(--red); }
+
+        /* --- PERUBAHAN BARU: Toggle Switch --- */
+        .toggle-switch {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--border-color);
+            transition: .4s;
+            border-radius: 24px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .slider {
+            background-color: var(--green);
+        }
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+        
+        /* --- Animasi --- */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes popIn {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        @keyframes glow-green {
+            0%, 100% { box-shadow: 0 0 5px #26a69a40, 0 0 10px #26a69a40; }
+            50% { box-shadow: 0 0 15px #26a69a80, 0 0 20px #26a69a80; }
+        }
+        @keyframes glow-red {
+            0%, 100% { box-shadow: 0 0 5px #ef535040, 0 0 10px #ef535040; }
+            50% { box-shadow: 0 0 15px #ef535080, 0 0 20px #ef535080; }
+        }
+        .value-up { color: var(--green); }
+        .value-down { color: var(--red); }
+        .value-pop { animation-name: popIn; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- HEADER -->
+        <header class="main-header">
+            <h1>📈 BTC/USD</h1>
+            <div class="metrics">
+                <div class="metric-item">
+                    <span class="label">Harga</span>
+                    <span class="value" id="current-price">$0.00</span>
+                </div>
+                <div class="metric-item">
+                    <span class="label">24h High</span>
+                    <span class="value" id="high-24h">$0.00</span>
+                </div>
+                <div class="metric-item">
+                    <span class="label">24h Low</span>
+                    <span class="value" id="low-24h">$0.00</span>
+                </div>
+                <div class="metric-item">
+                    <span class="label">Prediksi AI</span>
+                    <span class="value" id="prediction-price">$0.00</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- MAIN CONTENT -->
+        <main class="main-content">
+            <!-- Kolom Kiri: Panel Kontrol -->
+            <aside class="control-panel">
+                <!-- PENAMBAHAN FITUR: AUTO-TRADE TOGGLE -->
+                <div class="panel-section">
+                    <h3>🤖 Auto-Trade Bot</h3>
+                    <div class="toggle-switch">
+                        <span>Aktifkan Bot Otomatis</span>
+                        <label class="switch">
+                            <input type="checkbox" id="auto-trade-toggle">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="panel-section">
+                    <h3>🛒 Manual Override</h3>
+                    <div class="control-item">
+                        <label for="trade-amount">Jumlah (BTC)</label>
+                        <input type="number" id="trade-amount" value="0.01" step="0.01">
+                    </div>
+                    <div class="trade-panel">
+                        <button id="buy-button" class="trade-button buy-button">Market Buy</button>
+                        <button id="sell-button" class="trade-button sell-button">Market Sell</button>
+                    </div>
+                </div>
+                <div class="panel-section">
+                    <h3>🕹️ Auto-Sell Parameters</h3>
+                    <div class="control-item">
+                        <label for="target-profit">Target Profit (%)</label>
+                        <input type="number" id="target-profit" value="2.0" step="0.1">
+                    </div>
+                    <div class="control-item">
+                        <label for="stop-loss">Stop Loss (%)</label>
+                        <input type="number" id="stop-loss" value="1.0" step="0.1">
+                    </div>
+                </div>
+                <div class="panel-section">
+                    <h3>📊 Status Posisi</h3>
+                    <div id="status-box" class="status-box status-inactive">
+                        <span id="status-text">TIDAK AKTIF</span>
+                    </div>
+                    <div class="pnl-info">
+                        <span>P/L: </span><span id="pnl-value">N/A</span>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Kolom Kanan: Grafik Utama -->
+            <section class="chart-section">
+                <div id="candlestick-chart"></div>
+                 <!-- Keputusan Bot dipindahkan ke bawah grafik agar lebih fokus -->
+                <div class="panel-section" style="border-top: 1px solid var(--border-color); padding-top: 1rem; margin-top: 1rem; border-bottom: none;">
+                     <div class="decision-item" style="justify-content: space-around;">
+                        <span>Sinyal AI: <b id="ai-signal" class="hold">TAHAN</b></span>
+                        <span>Prediksi Harga: <b id="prediction-text" class="hold">$0.00</b></span>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        // --- STATE MANAGEMENT (MEMORI FRONTEND) ---
+        let inPosition = false;
+        let buyPrice = 0.0;
+        let chart;
+        let lastPrice = 0;
+        let dummyChartData = generateInitialDummyData();
+
+        // --- ELEMEN DOM ---
+        const currentPriceEl = document.getElementById('current-price');
+        const high24hEl = document.getElementById('high-24h');
+        const low24hEl = document.getElementById('low-24h');
+        const predictionPriceEl = document.getElementById('prediction-price');
+        const statusBoxEl = document.getElementById('status-box');
+        const statusTextEl = document.getElementById('status-text');
+        const pnlValueEl = document.getElementById('pnl-value');
+        const aiSignalEl = document.getElementById('ai-signal');
+        const predictionTextEl = document.getElementById('prediction-text');
+        const buyButton = document.getElementById('buy-button');
+        const sellButton = document.getElementById('sell-button');
+        const autoTradeToggle = document.getElementById('auto-trade-toggle');
+
+        // --- PENGATURAN GRAFIK APEXCHARTS ---
+        const chartOptions = {
+            series: [{ data: dummyChartData }],
+            chart: {
+                type: 'candlestick',
+                height: '100%',
+                foreColor: '#d1d4dc',
+                background: 'transparent',
+                animations: { enabled: true, easing: 'easeinout', speed: 800 }
+            },
+            title: { text: 'BTC/USD - Live', align: 'left', style: { color: '#d1d4dc' } },
+            xaxis: { type: 'datetime' },
+            yaxis: { tooltip: { enabled: true }, labels: { formatter: (val) => `$${val.toFixed(2)}` } },
+            tooltip: { theme: 'dark' },
+            grid: { borderColor: '#2a2e39' }
+        };
+
+        // Inisialisasi grafik saat halaman dimuat
+        document.addEventListener('DOMContentLoaded', () => {
+            chart = new ApexCharts(document.querySelector("#candlestick-chart"), chartOptions);
+            chart.render();
+            
+            // Tambahkan Event Listener untuk tombol dan toggle
+            buyButton.addEventListener('click', executeBuy);
+            sellButton.addEventListener('click', executeSell);
+            autoTradeToggle.addEventListener('change', handleAutoTradeToggle);
+            
+            handleAutoTradeToggle(); // Set initial state
+            updateDashboard(); // Panggil data pertama kali
+        });
+
+        // --- FUNGSI EKSEKUSI TRADING ---
+        function executeBuy() {
+            if (inPosition) {
+                alert("Anda sudah memiliki posisi aktif.");
+                return;
+            }
+            inPosition = true;
+            buyPrice = lastPrice; // Gunakan harga terakhir yang diketahui
+            addLog(`MANUAL BUY @ ${buyPrice.toFixed(2)}`, 'buy');
+            updateStatusUI();
+        }
+
+        function executeSell() {
+            if (!inPosition) {
+                alert("Anda tidak memiliki posisi untuk dijual.");
+                return;
+            }
+            const pnl = ((lastPrice - buyPrice) / buyPrice) * 100;
+            addLog(`MANUAL SELL @ ${lastPrice.toFixed(2)} (P/L: ${pnl.toFixed(2)}%)`, 'sell');
+            inPosition = false;
+            updateStatusUI();
+        }
+        
+        function handleAutoTradeToggle() {
+            const isEnabled = autoTradeToggle.checked;
+            buyButton.disabled = isEnabled;
+            sellButton.disabled = isEnabled;
+        }
+
+        // --- FUNGSI UTAMA UNTUK MENG-UPDATE DASHBOARD ---
+        function updateDashboard() {
+            const data = generateDummyUpdate();
+
+            updateMetric(currentPriceEl, data.current_price, true);
+            updateMetric(high24hEl, data.high_24h);
+            updateMetric(low24hEl, data.low_24h);
+            updateMetric(predictionPriceEl, data.prediction);
+            updateSignalUI(predictionTextEl, `$${data.prediction.toFixed(2)}`);
+
+            dummyChartData.push(data.newCandle);
+            if (dummyChartData.length > 100) dummyChartData.shift();
+            chart.updateSeries([{ data: dummyChartData }]);
+            
+            runAutomatedLogic(data);
+        }
+
+        function runAutomatedLogic(data) {
+            const targetProfitPercent = parseFloat(document.getElementById('target-profit').value);
+            const stopLossPercent = parseFloat(document.getElementById('stop-loss').value);
+            const isAutoTradeActive = autoTradeToggle.checked;
+
+            let aiSignal = "TAHAN";
+            if (data.prediction > data.current_price * 1.001) aiSignal = "BELI";
+            else if (data.prediction < data.current_price * 0.999) aiSignal = "JUAL";
+            updateSignalUI(aiSignalEl, aiSignal);
+
+            if (!inPosition) {
+                // Logika Auto-Buy
+                if (isAutoTradeActive && aiSignal === "BELI") {
+                    inPosition = true;
+                    buyPrice = data.current_price;
+                    addLog(`AUTO BUY @ ${data.current_price.toFixed(2)}`, 'buy');
+                    updateStatusUI();
+                }
+            } else {
+                // Logika Auto-Sell
+                const pnl = ((data.current_price - buyPrice) / buyPrice) * 100;
+                const targetPrice = buyPrice * (1 + targetProfitPercent / 100);
+                const stopLossPrice = buyPrice * (1 - stopLossPercent / 100);
+
+                if (data.current_price >= targetPrice) {
+                    addLog(`AUTO SELL ON PROFIT @ ${data.current_price.toFixed(2)} (P/L: +${pnl.toFixed(2)}%)`, 'profit');
+                    inPosition = false;
+                } else if (data.current_price <= stopLossPrice) {
+                    addLog(`AUTO STOP LOSS @ ${data.current_price.toFixed(2)} (P/L: ${pnl.toFixed(2)}%)`, 'sell');
+                    inPosition = false;
+                }
+                pnlValueEl.textContent = `${pnl.toFixed(2)}%`;
+                updateStatusUI();
+            }
+        }
+
+        // --- FUNGSI BANTUAN ---
+        function updateStatusUI() {
+            if (inPosition) {
+                statusBoxEl.className = 'status-box status-active';
+                statusTextEl.textContent = 'POSISI AKTIF';
+            } else {
+                statusBoxEl.className = 'status-box status-inactive';
+                statusTextEl.textContent = 'TIDAK AKTIF';
+                pnlValueEl.textContent = 'N/A';
+            }
+        }
+
+        function updateMetric(element, value, isPrice = false) {
+            const formattedValue = `$${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+            if (element.textContent !== formattedValue) {
+                element.textContent = formattedValue;
+                element.classList.add('value-pop');
+                element.addEventListener('animationend', () => element.classList.remove('value-pop'), { once: true });
+                if (isPrice && lastPrice !== 0) {
+                    element.classList.remove('value-up', 'value-down');
+                    if (value > lastPrice) element.classList.add('value-up');
+                    else if (value < lastPrice) element.classList.add('value-down');
+                }
+            }
+            if (isPrice) lastPrice = value;
+        }
+
+        function updateSignalUI(element, text) {
+            element.className = 'hold'; // default
+            if (text.includes('BELI')) element.classList.add('buy');
+            else if (text.includes('JUAL')) element.classList.add('sell');
+            element.textContent = text;
+        }
+        
+        function addLog(message, type) {
+            const newLog = document.createElement('p');
+            // Logika log tidak ada di sini, jadi kita lewati
+        }
+
+        // --- DUMMY DATA GENERATOR ---
+        function generateInitialDummyData() {
+            let data = [];
+            let price = 68000;
+            let time = new Date().getTime();
+            for (let i = 0; i < 99; i++) {
+                const open = price;
+                const close = open + (Math.random() - 0.5) * 200;
+                const high = Math.max(open, close) + Math.random() * 100;
+                const low = Math.min(open, close) - Math.random() * 100;
+                data.push({ x: time, y: [open, high, low, close] });
+                price = close;
+                time -= 5 * 60 * 1000;
+            }
+            return data.reverse();
+        }
+
+        function generateDummyUpdate() {
+            const lastCandle = dummyChartData[dummyChartData.length - 1];
+            const lastPrice = lastCandle.y[3];
+            const newPrice = lastPrice + (Math.random() - 0.49) * 300;
+            const open = lastPrice;
+            const close = newPrice;
+            const high = Math.max(open, close) + Math.random() * 150;
+            const low = Math.min(open, close) - Math.random() * 150;
+            const allPrices = dummyChartData.map(d => d.y[3]).concat([newPrice]);
+            return {
+                current_price: newPrice,
+                high_24h: Math.max(...allPrices),
+                low_24h: Math.min(...allPrices),
+                prediction: newPrice * (1 + (Math.random() - 0.5) * 0.005),
+                newCandle: { x: new Date().getTime(), y: [open, high, low, close] }
+            };
+        }
+
+        // --- LOOP UTAMA ---
+        setInterval(updateDashboard, 3000);
+    </script>
+</body>
+</html>

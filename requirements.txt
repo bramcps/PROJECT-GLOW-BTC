@@ -1,0 +1,6 @@
+websocket-client
+pandas
+numpy
+scikit-learn
+tensorflow
+joblib
